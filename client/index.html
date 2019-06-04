@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <meta name="author" content="">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>APG\Blog</title>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/main.css" type="text/css" />
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+
+    <navigate id="nav"></navigate>
+    <hr>
+    <div id="render-target" class="container-fluid">
+    </div>
+
+    <!-- jQuery (Must for Bootstrap) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+    <!-- Bootstrap script -->
+    <script src='//cdn.tinymce.com/4/tinymce.min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/riot/2.4/riot.min.js" charset="utf-8"></script>
+    <script src="/js/navigate.js" charset="utf-8"></script>
+    <script src="/js/admin.js" charset="utf-8"></script>
+    <script src="/js/login.js" charset="utf-8"></script>
+    <script src="/js/logout.js" charset="utf-8"></script>
+    <script src="/js/join.js" charset="utf-8"></script>
+    <script src="/js/main.js" charset="utf-8"></script>
+    <script src="/js/post.js" charset="utf-8"></script>
+    <script src="/js/missing.js" charset="utf-8"></script>
+    <script src="/js/new.js" charset="utf-8"></script>
+    <script src="/js/updater.js" charset="utf-8"></script>
+    <script src="../socket.io/socket.io.js" charset="utf-8"></script>
+
+    <script type="text/javascript">
+      var socket = io.connect();
+      socket.emit('ready');
+
+      currentPage=null;
+
+      riot.route('/',() => {
+        if(currentPage!=null)
+          currentPage.unmount(true);
+        socket.emit('login:check',{from:'home'})
+        socket.once("login-check-val", (data) => {
+          socket.removeListener('login-check-val')
+          currentPage=riot.mount('div#render-target','main')[0];
+        })
+      })
+
+      riot.route('/home',() => {
+        if(currentPage!=null)
+          currentPage.unmount(true);
+          socket.emit('login:check',{from:'home'})
+          socket.once("login-check-val", (data) => {
+            socket.removeListener('login-check-val')
+            currentPage=riot.mount('div#render-target','main')[0];
+          })
+      })
+
+      riot.route('/view/*',(pid) => {
+
+        if(currentPage)
+          currentPage.unmount(true);
+        socket.emit('posts:ViewOne',{pageID:pid});
+        socket.once('fetched-one',(data) => {
+
+          socket.removeListener('fetched-one')
+          if (data.post===null) {
+            currentPage=riot.mount('div#render-target','post',{error:true})[0]
+          }else {
+
+            currentPage=riot.mount('div#render-target','post',data)[0]
+          }
+        })
+      })
+
+      riot.route('/login', () => {
+
+        if(currentPage!=null)
+          currentPage.unmount(true);
+        socket.emit('login:check',{from:'login'})
+
+        socket.once("login-check-val", (data) => {
+          socket.removeListener('login-check-val')
+          if ((data.user!==undefined&&data.user!==null)||(data.logged!==undefined&&data.logged==true)) {
+            riot.route('/','APG/Blog Home')
+          }else {
+            currentPage=riot.mount('div#render-target','login')[0]
+          }
+        })
+      })
+
+      riot.route('/logout',() => {
+
+        if(currentPage!=null)
+          currentPage.unmount(true);
+        socket.emit('login:check',{from:'logout'});
+        socket.once("login-check-val", (data) => {
+          socket.removeListener('login-check-val');
+          if (data.user===undefined || data.user.logged===false) {
+            riot.route('/login')
+          }else {
+            currentPage=riot.mount('div#render-target','logout')[0]
+          }
+        })
+      })
+
+      riot.route('/a',()=>{
+        socket.emit('test')
+        if(currentPage!=null)
+          currentPage.unmount(true);
+        socket.emit('login:check',{from:'login'});
+        socket.once('login-check-val',(data) => {
+          if(data.user===undefined || data.user==null||data.user.is_admin===0){
+            riot.route('/')
+          }
+          else {
+            currentPage=riot.mount('div#render-target','admin')[0]
+          }
+        })
+      })
+
+      riot.route('/join',() => {
+
+        if(currentPage!=null)
+          currentPage.unmount(true);
+        socket.emit('login:check',{from:'login'})
+        socket.once("login-check-val", (data) => {
+          socket.removeListener('login-check-val')
+          if(data.user!== undefined && data.user!==null)
+            riot.route('/','APG/Blog Home')
+          else {
+            currentPage=riot.mount('div#render-target','join')[0]
+          }
+        })
+      })
+
+      riot.route('/create',() => {
+
+        if(currentPage!=null)
+          currentPage.unmount(true);
+        socket.once('login-check-val',(data) => {
+          if(data.user===undefined){
+            currentPage=riot.mount('div#render-target','create',{user:'Brandon Porter'})
+          }else {
+            currentPage=riot.mount('div#render-target','create',{user:data.username})[0]
+          }
+        })
+      })
+
+      riot.route('*',() => {
+        if(currentPage!=null)
+          currentPage.unmount(true);
+
+        currentPage=riot.mount('div#render-target','missing')[0]
+      })
+
+
+      riot.route.start(true)
+
+      var navigation=riot.mount('navigate')[0]
+
+    </script>
+
+  </body>
+</html>
