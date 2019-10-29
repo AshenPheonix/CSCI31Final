@@ -13,7 +13,7 @@
     "connect": "^3.4.1",
     "express.io": "^1.1.13",
     "friendly-sql": "^0.1.5",
-    "mysql": "^2.10.2",
+    "mysql": "^2.14.0",
     "mysql-chassis": "^3.0.1",
     "mysql-model": "0.0.2",
     "riot": "^2.4.0",
